@@ -44,8 +44,6 @@
     <div id="counter">Completed Prompts: 0</div>
     <button id="downloadBtn">Download Data</button>
     
-    <p>Keep your handwriting on one line for proper results. Writing on multiple lines will not properly train the AI.</p>
-    
     <script>
         const canvas = document.getElementById('drawingPad');
         const ctx = canvas.getContext('2d');
@@ -59,30 +57,60 @@
         document.getElementById('prompt').innerText = prompts[currentPromptIndex];
         document.getElementById('counter').innerText = `Completed Prompts: ${completedPrompts.length}`;
 
-        canvas.addEventListener('mousedown', (e) => {
+        function startDrawing(x, y) {
             drawing = true;
-            currentStroke.push({ x: e.offsetX, y: e.offsetY, t: Date.now() });
-        });
+            currentStroke.push({ x, y, t: Date.now() });
+        }
 
-        canvas.addEventListener('mousemove', (e) => {
+        function draw(x, y) {
             if (!drawing) return;
-            const x = e.offsetX;
-            const y = e.offsetY;
             const t = Date.now();
             currentStroke.push({ x, y, t });
             ctx.lineTo(x, y);
             ctx.stroke();
             ctx.beginPath();
             ctx.moveTo(x, y);
-        });
+        }
 
-        canvas.addEventListener('mouseup', () => {
+        function endDrawing() {
             drawing = false;
             ctx.beginPath();
             if (currentStroke.length > 0) {
                 strokes.push(currentStroke);
                 currentStroke = [];
             }
+        }
+
+        // Mouse events
+        canvas.addEventListener('mousedown', (e) => {
+            startDrawing(e.offsetX, e.offsetY);
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            draw(e.offsetX, e.offsetY);
+        });
+
+        canvas.addEventListener('mouseup', endDrawing);
+        canvas.addEventListener('mouseout', endDrawing);
+
+        // Touch events
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            const touch = e.touches[0];
+            startDrawing(touch.clientX - rect.left, touch.clientY - rect.top);
+        });
+
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            const touch = e.touches[0];
+            draw(touch.clientX - rect.left, touch.clientY - rect.top);
+        });
+
+        canvas.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            endDrawing();
         });
 
         document.getElementById('clearBtn').addEventListener('click', () => {
